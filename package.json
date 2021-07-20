@@ -1,0 +1,24 @@
+{
+    "name": "@shanhuio/jarvis",
+    "version": "0.1.0",
+    "description": "Jarvis Web UI",
+    "main": "dist/index.js",
+    "scripts": {
+        "test": "echo 'no test' && exit 1"
+    },
+    "author": "Shanhu Tech Inc. <contact@shanhu.io>",
+    "license": "AGPL3",
+    "private": false,
+    "dependencies": {
+        "@shanhuio/htmlgen": "file:../htmlgen",
+        "@shanhuio/lessbase": "file:../lessbase",
+        "@shanhuio/misc": "file:../misc",
+        "@types/jquery": "^3.5.5",
+        "@types/react": "^17.0.11",
+        "@types/react-dom": "^17.0.7",
+        "esbuild": "^0.12.8",
+        "jquery": "^3.6.0",
+        "react": "^17.0.2",
+        "react-dom": "^17.0.2"
+    }
+}
