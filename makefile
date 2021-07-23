@@ -1,4 +1,4 @@
-.PHONY: gen css js static all fmt pack
+.PHONY: gen css js static all fmt dist
 
 LESSC=lessc --include-path=less:node_modules
 
