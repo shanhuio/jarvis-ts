@@ -1,4 +1,4 @@
-.PHONY: gen css js static all fmt
+.PHONY: gen css js static all fmt pack
 
 LESSC=lessc --include-path=less:node_modules
 
@@ -20,3 +20,7 @@ js: tsc
 
 fmt:
 	tsfmt -r `find ./src -name "*.tsx"`
+
+dist: all
+	make -C _
+	mv _/jarvis.zip .
