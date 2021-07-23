@@ -1,6 +1,6 @@
 {
     "name": "@shanhuio/jarvis",
-    "version": "0.1.0",
+    "version": "0.0.0",
     "description": "Jarvis Web UI",
     "main": "dist/index.js",
     "scripts": {
