@@ -21,7 +21,6 @@ import * as appcore from '@shanhuio/misc/dist/appcore'
 import * as apppage from '@shanhuio/misc/dist/apppage'
 
 import * as dashpassword from './dashpassword'
-import * as state from './state'
 import * as dashseclogs from './dashseclogs'
 import * as dashcore from './dashcore'
 import * as dash2fa from './dash2fa'
@@ -69,10 +68,6 @@ class Dashboard {
         ])
 
         s.init(data)
-    }
-
-    addPage(path: string, p: apppage.Page) {
-        this.pages.set(path, new Page(this.dashCore, p))
     }
 
     redraw() { this.core.redraw() }

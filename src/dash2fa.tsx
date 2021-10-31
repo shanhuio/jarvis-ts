@@ -15,11 +15,9 @@
 
 import * as React from 'react' // for tsx
 
-import * as appcore from '@shanhuio/misc/dist/appcore'
 import * as apppage from '@shanhuio/misc/dist/apppage'
 
 import * as dashcore from './dashcore'
-import * as state from './state'
 
 export class TOTPSetup {
     SignedSecret: string
