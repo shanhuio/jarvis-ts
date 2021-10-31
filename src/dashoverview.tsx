@@ -15,6 +15,10 @@
 
 import * as React from 'react' // for tsx
 
+import * as apppage from '@shanhuio/misc/dist/apppage'
+
+import * as dashcore from './dashcore'
+
 class DiskSize {
     MB: number
     B: number
@@ -35,19 +39,19 @@ class DiskUsage {
     Free: DiskSize
 }
 
-export class Data {
+export class PageData {
     NoSysDock: boolean
     NextcloudDomain: string
     IPAddrs: string[]
     DiskUsage: DiskUsage
 }
 
-function renderIPAddresses(d: Data): JSX.Element {
+function renderIPAddresses(d: PageData): JSX.Element {
     if (!d.IPAddrs) { return null }
     return <div>IP address: {d.IPAddrs.join(' ')}</div>
 }
 
-function renderDiskUsage(d: Data): JSX.Element {
+function renderDiskUsage(d: PageData): JSX.Element {
     let du = d.DiskUsage
     if (!du) return null
 
@@ -86,7 +90,7 @@ function renderDiskUsage(d: Data): JSX.Element {
     </p>
 }
 
-function renderSystemStatus(d: Data): JSX.Element {
+function renderSystemStatus(d: PageData): JSX.Element {
     if (d.NoSysDock) {
         return <div className="section">
             <h3>System Status</h3>
@@ -101,7 +105,7 @@ function renderSystemStatus(d: Data): JSX.Element {
     </div>
 }
 
-function renderApps(d: Data): JSX.Element {
+function renderApps(d: PageData): JSX.Element {
     let ncDomain = d.NextcloudDomain
     if (!ncDomain) return null
     return <div className="section">
@@ -116,10 +120,31 @@ function renderApps(d: Data): JSX.Element {
     </div>
 }
 
-export function render(d: Data): JSX.Element {
-    if (!d) { return null }
-    return <div className="overview">
-        {renderSystemStatus(d)}
-        {renderApps(d)}
-    </div>
+export class Page {
+    core: dashcore.Core
+    data: PageData
+
+    constructor(core: dashcore.Core) {
+        this.core = core
+    }
+
+    setData(d: dashcore.PageData) {
+        this.data = d.Overview as PageData
+    }
+
+    enter(path: string, pageData: any): apppage.Meta {
+        this.core.setTab('overview')
+        this.core.fetchOrSet(this, path, pageData)
+        return { title: 'Overview' }
+    }
+
+    exit() { this.data = null }
+
+    render() {
+        if (!this.data) { return null }
+        return <div className="overview">
+            {renderSystemStatus(this.data)}
+            {renderApps(this.data)}
+        </div>
+    }
 }

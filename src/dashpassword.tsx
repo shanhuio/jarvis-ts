@@ -15,11 +15,13 @@
 
 import * as React from 'react' // for tsx
 
-import * as appcore from '@shanhuio/misc/dist/appcore'
 import * as inputs from '@shanhuio/misc/dist/inputs'
+import * as apppage from '@shanhuio/misc/dist/apppage'
 
-export class ChangeView {
-    core: appcore.Core
+import * as dashcore from './dashcore'
+
+export class ChangePage {
+    core: dashcore.Core
 
     session: number = 0 // For redrawing the input boxes.
 
@@ -29,10 +31,17 @@ export class ChangeView {
     error: string = ''
     ok: boolean = false
 
-    constructor(core: appcore.Core) {
+    constructor(core: dashcore.Core) {
         this.clear()
         this.core = core
     }
+
+    enter(path: string, data: any): apppage.Meta {
+        this.core.setTab('change-password')
+        return { title: 'Change Password' }
+    }
+
+    exit() { this.clear() }
 
     clear() {
         this.session += 1
@@ -65,7 +74,7 @@ export class ChangeView {
         this.core.redraw()
         if (err) return
 
-        this.core.call('/api/user/changepwd', {
+        this.core.app.call('/api/user/changepwd', {
             OldPassword: this.oldPassword,
             NewPassword: this.newPassword,
         }, {

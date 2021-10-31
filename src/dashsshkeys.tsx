@@ -15,21 +15,25 @@
 
 import * as React from 'react' // for tsx
 
-import * as appcore from '@shanhuio/misc/dist/appcore'
+import * as apppage from '@shanhuio/misc/dist/apppage'
 
-export class Data {
+import * as dashcore from './dashcore'
+
+export class PageData {
     Disabled: boolean
     Keys: string
 }
 
-export class View {
-    core: appcore.Core
+export class Page {
+    core: dashcore.Core
+
+    show: boolean = false
     disabled: boolean
     keys: string
     successMsg: string = ''
     errorMsg: string = ''
 
-    constructor(core: appcore.Core) {
+    constructor(core: dashcore.Core) {
         this.core = core
     }
 
@@ -37,7 +41,7 @@ export class View {
 
     update(ev: React.FormEvent<HTMLElement>) {
         ev.preventDefault()
-        this.core.call('/api/sshkeys/update', {
+        this.core.app.call('/api/sshkeys/update', {
             Keys: this.keys,
         }, {
             success: (resp: any, status: string, xhr: JQueryXHR) => {
@@ -52,7 +56,17 @@ export class View {
         })
     }
 
-    setData(d: Data) {
+    enter(path: string, data: any): apppage.Meta {
+        this.core.setTab('ssh-keys')
+        this.core.fetchOrSet(this, path, data)
+        return { title: 'SSH Keys' }
+    }
+
+    exit() { this.show = false }
+
+    setData(data: dashcore.PageData) {
+        this.show = true
+        let d = data.SSHKeys as PageData 
         this.disabled = d.Disabled
         this.keys = d.Keys
     }
@@ -74,25 +88,27 @@ export class View {
     }
 
     renderSuccess(): JSX.Element {
-        if (!this.successMsg) { return null }
+        if (!this.successMsg) return null
         return <div className="ok">{this.successMsg}</div>
     }
 
     renderError(): JSX.Element {
-        if (!this.errorMsg) { return null }
+        if (!this.errorMsg) return null
         return <div className="error">{this.errorMsg}</div>
     }
 
     render(): JSX.Element {
+        if (!this.show) return null
+
         let h2 = <h2>Authorized SSH Public Keys</h2>
         if (this.disabled) {
-            return <div>
+            return <React.Fragment>
                 {h2}
                 <p>HomeDrive is not managing the operating system, so
                 it does not manage the authorized SSH public keys. <br />
                 To change the SSH authorized keys, maybe change
                 them at <code>~/.ssh/authorized_keys</code>.</p>
-            </div>
+            </React.Fragment>
         }
         let onClickUpdate = (ev: React.FormEvent<HTMLElement>) => {
             ev.preventDefault()
@@ -102,13 +118,11 @@ export class View {
         return <div className="ssh-keys">
             {h2}
             {this.renderKeys()}
-            <div className="controls">
-                <a href="#" onClick={onClickUpdate}>
-                    <span className="button-green">
-                        Update Keys
-                    </span>
-                </a>
-            </div>
+            <div className="controls"><a href="#" onClick={onClickUpdate}>
+                <span className="button-green">
+                    Update Keys
+                </span>
+            </a></div>
             {this.renderSuccess()}
             {this.renderError()}
         </div>

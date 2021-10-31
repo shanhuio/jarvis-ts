@@ -17,203 +17,97 @@ import * as React from 'react' // for tsx
 
 import * as redraw from '@shanhuio/misc/dist/redraw'
 import * as render from '@shanhuio/misc/dist/render'
-import * as tracker from '@shanhuio/misc/dist/tracker'
 import * as appcore from '@shanhuio/misc/dist/appcore'
+import * as apppage from '@shanhuio/misc/dist/apppage'
 
-import * as password from './password'
-import * as logs from './logs'
-import * as twofa from './twofa'
-import * as sshkeys from './sshkeys'
+import * as dashpassword from './dashpassword'
 import * as state from './state'
-import * as overview from './overview'
+import * as dashseclogs from './dashseclogs'
+import * as dashcore from './dashcore'
+import * as dash2fa from './dash2fa'
+import * as dashsshkeys from './dashsshkeys'
+import * as dashoverview from './dashoverview'
 
-export class SecurityLogsData {
-    Entries: logs.Entry[]
+class Page {
+    page: apppage.Page
+    core: dashcore.Core
+
+    constructor(core: dashcore.Core, page: apppage.Page) {
+        this.page = page
+        this.core = core
+    }
+
+    enter(path: string, pageData: any): apppage.Meta {
+        this.core.redraw()
+        if (pageData) {
+            let d = pageData as dashcore.PageData
+            if (d.NeedSudo) {
+                let redirect = '/confirm-password?redirect=' +
+                    encodeURIComponent('/' + d.Path)
+                window.location.replace(redirect)
+                return { title: 'Redirecting...' }
+            }
+        }
+        return this.page.enter(path, pageData)
+    }
+
+    render() { return this.page.render() }
+    exit() { return this.page.exit() }
 }
 
-export class PageData {
-    Tab: string
-    Sub: string
-    RequestID: number
-    NeedSudo: boolean
-    Now: number
-
-    Overview: overview.Data
-    TwoFactorAuth: twofa.Data
-    SecurityLogs: SecurityLogsData
-    SSHKeys: sshkeys.Data
-}
-
-class DataRequest {
-    Tab: string
-    Sub: string
-    RequestID: number
-}
-
-interface Props {
-    data: PageData
-}
-
-class App extends React.Component<Props, {}> {
+class Dashboard  {
     core: appcore.Core
+    dashCore: dashcore.Core
+
     // Cannot call this state as it is used by React.Component.
-    lastRequestID: number = 0
     loading: boolean = false
-    data: PageData
     viewState: state.State
 
-    changePassword: password.ChangeView
-    securityLogs: logs.View
-    twofa: twofa.View
-    twofaEnableTotp: twofa.EnableTotpView
-    twofaDisableTotp: twofa.DisableTotpView
-    sshKeys: sshkeys.View
+    overview: Page
+    changePassword: Page
+    securityLogs: Page
+    twofa: Page
+    twofaEnableTotp: Page
+    twofaDisableTotp: Page
+    sshKeys: Page
 
-    constructor(props: Props) {
-        super(props)
-
+    constructor(r: redraw.Redraw, data: dashcore.PageData) {
         // init states
-        this.lastRequestID = 0
         this.loading = false
-        let data = props.data
 
-        // build core
-        let r = redraw.NewRedraw(this)
-        let t = new tracker.Tracker({
-            stateFunc: (s: tracker.State) => {
-                if (s instanceof state.State) {
-                    this.enterState(s as state.State)
-                    this.refresh()
-                }
-            },
-            decodeFunc: state.parse,
-        })
-        this.core = appcore.make(r, t)
+        let s = new apppage.Switcher({ handler: this }, data.Path)
+        this.core = appcore.makeWithSwitch(r, s)
+        this.dashCore = new dashcore.Core(this.core)
+        let c = this.dashCore
 
         // build views
-        this.changePassword = new password.ChangeView(this.core)
-        this.securityLogs = new logs.View(this.core, {
-            title: 'Security Logs',
-            data: () => {
-                if (!this.data.SecurityLogs) { return null }
-                return { entries: this.data.SecurityLogs.Entries }
-            }
-        })
-        this.twofa = new twofa.View(this.core)
-        this.twofaEnableTotp = new twofa.EnableTotpView(this.core)
-        this.twofaDisableTotp = new twofa.DisableTotpView(this.core)
-        this.sshKeys = new sshkeys.View(this.core)
+        this.overview = new Page(c, new dashoverview.Page(c))
+        this.changePassword = new Page(c, new dashpassword.ChangePage(c))
+        this.securityLogs = new Page(c, new dashseclogs.Page(c))
+        this.twofa = new Page(c, new dash2fa.Page(c))
+        this.twofaEnableTotp = new Page(c, new dash2fa.EnableTotpPage(c))
+        this.twofaDisableTotp = new Page(c, new dash2fa.DisableTotpPage(c))
+        this.sshKeys = new Page(c, new dashsshkeys.Page(c))
 
-        // enter init state and set data
-        let initState = state.make(data.Tab, data.Sub)
-        this.core.tracker.enterState(initState)
-        this.enterState(initState)
-        this.setData(initState, data)
+        s.init(data)
     }
 
     redraw() { this.core.redraw() }
 
-    enterState(s: state.State) {
-        this.viewState = s
-        switch (s.tab) {
-            case 'change-password':
-                this.changePassword.clear()
-                break
-            case '2fa':
-                if (s.sub == 'enable-totp') {
-                    this.twofaEnableTotp.clear()
-                } else if (s.sub == 'disable-totp') {
-                    this.twofaDisableTotp.clear()
-                }
-                break
-        }
-    }
-
-    setData(state: state.State, data: PageData) {
-        this.data = data
-        if (data.NeedSudo) {
-            let redirect = '/confirm-password?redirect=' +
-                encodeURIComponent(state.url())
-            window.location.replace(redirect)
-            return
-        }
-
-        if (this.data.TwoFactorAuth) {
-            if (this.data.Sub == 'enable-totp') {
-                this.twofaEnableTotp.setData(this.data.TwoFactorAuth.TOTP)
-            } else if (this.data.Sub == 'disable-totp') {
-                this.twofaDisableTotp.setData(this.data.TwoFactorAuth.TOTP)
-            } else {
-                this.twofa.setData(this.data.TwoFactorAuth)
-            }
-        }
-        if (this.data.SSHKeys) {
-            this.sshKeys.setData(this.data.SSHKeys)
-        }
-    }
-
-    makeSwitch(nextState: string) {
-        return (ev: React.SyntheticEvent) => {
-            ev.preventDefault()
-            this.core.goto(state.parse(nextState))
-        }
-    }
-
-    refresh() {
-        let state = this.viewState
-        this.lastRequestID += 1
-        if (state.needQuery()) {
-            let req = new DataRequest()
-            req.Tab = state.tab
-            req.Sub = state.sub
-            this.loading = true
-            req.RequestID = this.lastRequestID
-
-            this.core.call('/api/dashboard/data', req, {
-                success: (d: any, status: string, xhr: JQueryXHR) => {
-                    let pageData = d as PageData
-                    if (pageData.RequestID != this.lastRequestID) {
-                        return
-                    }
-                    this.loading = false
-
-                    this.setData(state, pageData)
-                    this.redraw()
-                },
-                error: (xhr: JQueryXHR, status: string, err: string) => {
-                    // TODO(h8liu): proper error handling
-                    console.log(status, err)
-                },
-            })
-        }
-
-        this.redraw()
-    }
-
-    renderView(): JSX.Element {
-        let now = this.data.Now
-        switch (this.viewState.tab) {
-            case 'change-password':
-                return this.changePassword.render()
-            case 'security-logs':
-                return this.securityLogs.render(now)
-            case '2fa':
-                if (this.viewState.sub == 'enable-totp') {
-                    return this.twofaEnableTotp.render()
-                } else if (this.viewState.sub == 'disable-totp') {
-                    return this.twofaDisableTotp.render()
-                }
-                return this.twofa.render()
-            case 'ssh-keys':
-                return this.sshKeys.render()
-            default:
-                return overview.render(this.data.Overview)
-        }
+    handle(path: string): apppage.Page {
+        if (path == 'overview') return this.overview
+        if (path == 'change-password') return this.changePassword
+        if (path == 'security-logs') return this.securityLogs
+        if (path == 'ssh-keys') return this.sshKeys
+        if (path == '2fa') return this.twofa
+        if (path == '2fa/enable-totp') return this.twofaEnableTotp
+        if (path == '2fa/disable-totp') return this.twofaDisableTotp
+        return this.overview
     }
 
     render(): JSX.Element {
         let tabs = [
-            { name: 'ssh-keys', 'text': 'Authorized SSH Keys' },
+            { name: 'ssh-keys', text: 'Authorized SSH Keys' },
             { name: 'security-logs', text: 'Security Logs' },
             { name: 'change-password', text: 'Change Password' },
             { name: '2fa', text: 'Two-Factor Authentication' },
@@ -221,40 +115,51 @@ class App extends React.Component<Props, {}> {
         let tabLinks: JSX.Element[] = []
         for (let tab of tabs) {
             let url = '/' + tab.name
-            let onClick = this.makeSwitch(tab.name)
+            let onClick = this.dashCore.onClickGoto(tab.name)
             tabLinks.push(<li>
                 <a href={url} onClick={onClick}>{tab.text}</a>
             </li>)
         }
 
-        let links = <ol className="links">
-            {tabLinks}
-        </ol>
+        let links = <ol className="links">{tabLinks}</ol>
 
-        return <div>
+        let onClickLogo = this.dashCore.onClickGoto('overview')
+
+        return <React.Fragment>
             <div className="topbar">
                 <span className="logo">
-                    <a href="/overview" onClick={this.makeSwitch('overview')}>
+                    <a href="/overview" onClick={onClickLogo}>
                         <img className="logo" src='/img/logo-white.png' />
                     </a>
                 </span>
-                <a href="/overview" onClick={this.makeSwitch('overview')}>
-                    HomeDrive
-                </a>
+                <a href="/overview" onClick={onClickLogo}>HomeDrive</a>
                 <span className="right">
                     <span className="part">
                         <a href="/signout">Sign Out</a>
                     </span>
                 </span>
             </div>
-            <div className="menu">
-                {links}
-            </div>
-            <div className="view">{this.renderView()}</div>
-        </div>
+            <div className="menu">{links}</div>
+            <div className="view">{this.core.switcher.page().render()}</div>
+        </React.Fragment>
     }
 }
 
-export function main(data: PageData) {
-    render.mainElement(<App data={data}></App>)
+interface Props {
+    data: dashcore.PageData
+}
+
+class Main extends React.Component<Props, {}> {
+    redraw: redraw.Redraw
+    dashboard: Dashboard
+
+    constructor(props: Props) {
+        super(props)
+        this.redraw = redraw.NewRedraw(this)
+        this.dashboard = new Dashboard(this.redraw, props.data)
+    }
+}
+
+export function main(data: dashcore.PageData) {
+    render.mainElement(<Main data={data}></Main>)
 }
