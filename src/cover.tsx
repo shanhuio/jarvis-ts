@@ -56,7 +56,7 @@ class LoginForm {
     }
 
     startCountDown() {
-        if (!this.redirectTo) { return }
+        if (!this.redirectTo) return
         this.redirectStopped = false
         this.countDownSec = 5
         this.scheduleNextCoundDown()
@@ -80,7 +80,7 @@ class LoginForm {
     }
 
     renderError(): JSX.Element {
-        if (!this.error) { return null }
+        if (!this.error) return null
         return <div className="error">{this.error}</div>
     }
 
@@ -89,7 +89,7 @@ class LoginForm {
     }
 
     renderRedirect() {
-        if (this.redirectStopped) { return null }
+        if (this.redirectStopped) return null
         if (this.countDownSec >= 2) {
             return <div className="redirect">
                 Redirect to {this.renderRedirectLink()}
@@ -113,7 +113,7 @@ class LoginForm {
     }
 
     renderForm(): JSX.Element {
-        if (this.hideForm) { return null }
+        if (this.hideForm) return null
         return <form className="login" action="/login" method="post">
             <div className="line" onMouseDown={() => { this.stopCountDown() }} >
                 <span className="prompt">Password</span>

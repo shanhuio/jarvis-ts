@@ -44,6 +44,12 @@ export class Core {
 
     setData(page: PageSetter, data: any) {
         let d = data as PageData
+        if (d.NeedSudo) {
+            let redirect = '/confirm-password?redirect=' +
+                encodeURIComponent('/' + d.Path)
+            window.location.replace(redirect)
+            return
+        }
         page.setData(d)
         this.redraw()
     }

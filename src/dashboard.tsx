@@ -39,15 +39,6 @@ class Page {
 
     enter(path: string, pageData: any): apppage.Meta {
         this.core.redraw()
-        if (pageData) {
-            let d = pageData as dashcore.PageData
-            if (d.NeedSudo) {
-                let redirect = '/confirm-password?redirect=' +
-                    encodeURIComponent('/' + d.Path)
-                window.location.replace(redirect)
-                return { title: 'Redirecting...' }
-            }
-        }
         return this.page.enter(path, pageData)
     }
 
@@ -55,54 +46,41 @@ class Page {
     exit() { return this.page.exit() }
 }
 
-class Dashboard  {
+class Dashboard {
     core: appcore.Core
     dashCore: dashcore.Core
 
-    // Cannot call this state as it is used by React.Component.
-    loading: boolean = false
-    viewState: state.State
-
-    overview: Page
-    changePassword: Page
-    securityLogs: Page
-    twofa: Page
-    twofaEnableTotp: Page
-    twofaDisableTotp: Page
-    sshKeys: Page
+    pages: Map<string, Page>
 
     constructor(r: redraw.Redraw, data: dashcore.PageData) {
-        // init states
-        this.loading = false
-
         let s = new apppage.Switcher({ handler: this }, data.Path)
         this.core = appcore.makeWithSwitch(r, s)
         this.dashCore = new dashcore.Core(this.core)
-        let c = this.dashCore
 
-        // build views
-        this.overview = new Page(c, new dashoverview.Page(c))
-        this.changePassword = new Page(c, new dashpassword.ChangePage(c))
-        this.securityLogs = new Page(c, new dashseclogs.Page(c))
-        this.twofa = new Page(c, new dash2fa.Page(c))
-        this.twofaEnableTotp = new Page(c, new dash2fa.EnableTotpPage(c))
-        this.twofaDisableTotp = new Page(c, new dash2fa.DisableTotpPage(c))
-        this.sshKeys = new Page(c, new dashsshkeys.Page(c))
+        let c = this.dashCore
+        this.pages = new Map<string, Page>([
+            ['overview', new Page(c, new dashoverview.Page(c))],
+            ['change-password', new Page(c, new dashpassword.ChangePage(c))],
+            ['security-logs', new Page(c, new dashseclogs.Page(c))],
+            ['2fa', new Page(c, new dash2fa.Page(c))],
+            ['2fa/enable-totp', new Page(c, new dash2fa.EnableTotpPage(c))],
+            ['2fa/disable-totp', new Page(c, new dash2fa.DisableTotpPage(c))],
+            ['ssh-keys', new Page(c, new dashsshkeys.Page(c))],
+        ])
 
         s.init(data)
+    }
+
+    addPage(path: string, p: apppage.Page) {
+        this.pages.set(path, new Page(this.dashCore, p))
     }
 
     redraw() { this.core.redraw() }
 
     handle(path: string): apppage.Page {
-        if (path == 'overview') return this.overview
-        if (path == 'change-password') return this.changePassword
-        if (path == 'security-logs') return this.securityLogs
-        if (path == 'ssh-keys') return this.sshKeys
-        if (path == '2fa') return this.twofa
-        if (path == '2fa/enable-totp') return this.twofaEnableTotp
-        if (path == '2fa/disable-totp') return this.twofaDisableTotp
-        return this.overview
+        let p = this.pages.get(path)
+        if (p) return p
+        return this.pages.get('overview')
     }
 
     render(): JSX.Element {
@@ -158,6 +136,8 @@ class Main extends React.Component<Props, {}> {
         this.redraw = redraw.NewRedraw(this)
         this.dashboard = new Dashboard(this.redraw, props.data)
     }
+
+    render() { return this.dashboard.render() }
 }
 
 export function main(data: dashcore.PageData) {

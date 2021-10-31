@@ -66,7 +66,7 @@ export class Page {
 
     setData(data: dashcore.PageData) {
         this.show = true
-        let d = data.SSHKeys as PageData 
+        let d = data.SSHKeys as PageData
         this.disabled = d.Disabled
         this.keys = d.Keys
     }
@@ -105,9 +105,9 @@ export class Page {
             return <React.Fragment>
                 {h2}
                 <p>HomeDrive is not managing the operating system, so
-                it does not manage the authorized SSH public keys. <br />
-                To change the SSH authorized keys, maybe change
-                them at <code>~/.ssh/authorized_keys</code>.</p>
+                    it does not manage the authorized SSH public keys. <br />
+                    To change the SSH authorized keys, maybe change
+                    them at <code>~/.ssh/authorized_keys</code>.</p>
             </React.Fragment>
         }
         let onClickUpdate = (ev: React.FormEvent<HTMLElement>) => {

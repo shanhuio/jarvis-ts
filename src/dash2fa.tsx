@@ -259,13 +259,13 @@ export class Page {
 
     enter(path: string, data: any): apppage.Meta {
         this.core.setTab('2fa')
-        this.core.fetchOrSet(this, path, PageData)
+        this.core.fetchOrSet(this, path, data)
         return { title: 'Two-factor Authentication' }
     }
 
     exit() { this.data = null }
 
-    setData(data: dashcore.PageData)  {
+    setData(data: dashcore.PageData) {
         this.data = data
         let d = data.TwoFactorAuth as PageData
         if (d.TOTP) { this.setTotpData(d.TOTP) }
