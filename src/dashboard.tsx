@@ -53,7 +53,7 @@ class Dashboard {
 
     constructor(r: redraw.Redraw, data: dashcore.PageData) {
         let s = new apppage.Switcher({ handler: this }, data.Path)
-        this.core = appcore.makeWithSwitch(r, s)
+        this.core = appcore.make(r, s)
         this.dashCore = new dashcore.Core(this.core)
 
         let c = this.dashCore
