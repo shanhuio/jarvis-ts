@@ -15,9 +15,9 @@
 
 import * as React from 'react' // for tsx
 
-import * as appcore from '@shanhuio/misc/dist/appcore'
+import * as apppage from '@shanhuio/misc/dist/apppage'
 
-import * as state from './state'
+import * as dashcore from './dashcore'
 
 export class TOTPSetup {
     SignedSecret: string
@@ -30,7 +30,7 @@ export class TOTPData {
     TOTPSetup: TOTPSetup
 }
 
-export class Data {
+export class PageData {
     TOTP: TOTPData
 }
 
@@ -43,8 +43,8 @@ function sanityCheckOTP(code: string) {
     return ''
 }
 
-export class EnableTotpView {
-    core: appcore.Core
+export class EnableTotpPage {
+    core: dashcore.Core
 
     enabled: boolean
     signedSecret: string = ''
@@ -53,13 +53,22 @@ export class EnableTotpView {
     otp: string
     show: boolean = false
 
-    constructor(core: appcore.Core) {
+    constructor(core: dashcore.Core) {
         this.core = core
     }
 
+    enter(path: string, pageData: any): apppage.Meta {
+        this.core.setTab('2fa')
+        this.core.fetchOrSet(this, path, pageData)
+        return { title: 'Enable TOTP' }
+    }
+
+    exit() { this.clear() }
+
     redraw() { this.core.redraw() }
 
-    setData(d: TOTPData) {
+    setData(data: dashcore.PageData) {
+        let d = (data.TwoFactorAuth as PageData).TOTP
         this.show = true
         this.enabled = d.Enabled
         this.errorMsg = ''
@@ -79,7 +88,7 @@ export class EnableTotpView {
         this.redraw()
         if (this.errorMsg) { return }
 
-        this.core.caller.call('/api/totp/enable', {
+        this.core.app.call('/api/totp/enable', {
             SignedSecret: this.signedSecret,
             OTP: this.otp,
         }, {
@@ -90,7 +99,7 @@ export class EnableTotpView {
                     this.redraw()
                     return
                 }
-                this.core.tracker.goto(state.parse('2fa'))
+                this.core.goto('2fa')
             },
             error: (xhr: JQueryXHR, status: string, err: string) => {
                 this.errorMsg = 'Failed to enable TOTP: ' + xhr.responseText
@@ -107,7 +116,8 @@ export class EnableTotpView {
     }
 
     render(): JSX.Element {
-        if (!this.show) { return null }
+        if (!this.show) return null
+
         if (this.enabled) {
             return <div className="activate">
                 TOTP already enabled.
@@ -146,57 +156,62 @@ export class EnableTotpView {
     }
 }
 
-export class DisableTotpView {
-    core: appcore.Core
+export class DisableTotpPage {
+    core: dashcore.Core
     errorMsg: string = ''
     show: boolean = false
     enabled: boolean
 
-    constructor(core: appcore.Core) {
+    constructor(core: dashcore.Core) {
         this.core = core
     }
+
+    enter(path: string, data: any): apppage.Meta {
+        this.core.setTab('2fa')
+        this.core.fetchOrSet(this, path, data)
+        return { title: 'Disable TOTP' }
+    }
+
+    exit() { this.clear() }
 
     clear() {
         this.show = false
         this.errorMsg = ''
     }
 
-    setData(d: TOTPData) {
+    setData(data: dashcore.PageData) {
+        let d = data.TwoFactorAuth as PageData
+        if (d.TOTP) { this.enabled = d.TOTP.Enabled }
         this.show = true
-        this.enabled = d.Enabled
     }
 
-    redraw() { this.core.redraw() }
-
     submit() {
-        this.core.caller.call(
+        this.core.app.call(
             '/api/totp/disable', {}, {
             success: (resp: any, status: string, xhr: JQueryXHR) => {
-                this.core.tracker.goto(state.parse('2fa'))
+                this.core.goto('2fa')
             },
             error: (xhr: JQueryXHR, status: string, err: string) => {
                 this.errorMsg = 'Failed to disable TOTP: ' + xhr.responseText
-                this.redraw()
+                this.core.redraw()
             },
         })
     }
 
     renderError(): JSX.Element {
-        if (!this.errorMsg) { return null }
+        if (!this.errorMsg) return null
         return <div className="error">
             <span className="error">{this.errorMsg}</span>
         </div>
     }
 
     render() {
-        if (!this.show) { return null }
-        let onClickGoBack = (ev: React.MouseEvent) => {
-            ev.preventDefault()
-            this.core.tracker.goto(state.parse('2fa'))
-        }
+        if (!this.show) return null
+
+        let onClickGoBack = this.core.onClickGoto('2fa')
 
         if (!this.enabled) {
-            return <div>
+            return <React.Fragment>
                 <h2>Disable TOTP</h2>
                 <p>TOTP is already disabled.</p>
                 <div className="buttons">
@@ -204,13 +219,14 @@ export class DisableTotpView {
                         <span className="button-gray">Go back</span>
                     </a>
                 </div>
-            </div>
+            </React.Fragment>
         }
 
         let onClickDisableConfirm = (ev: React.MouseEvent) => {
             ev.preventDefault()
             this.submit()
         }
+
         return <div className="two-factor">
             <h2>Disable TOTP</h2>
             <p>
@@ -230,42 +246,43 @@ export class DisableTotpView {
     }
 }
 
-export class View {
-    core: appcore.Core
-
+export class Page {
+    core: dashcore.Core
+    data: dashcore.PageData
     totpEnabled: boolean = false
 
-    constructor(core: appcore.Core) {
+    constructor(core: dashcore.Core) {
         this.core = core
     }
 
-    redraw() { this.core.redraw() }
+    enter(path: string, data: any): apppage.Meta {
+        this.core.setTab('2fa')
+        this.core.fetchOrSet(this, path, data)
+        return { title: 'Two-factor Authentication' }
+    }
 
-    setData(d: Data) {
+    exit() { this.data = null }
+
+    setData(data: dashcore.PageData) {
+        this.data = data
+        let d = data.TwoFactorAuth as PageData
         if (d.TOTP) { this.setTotpData(d.TOTP) }
     }
 
     setTotpData(d: TOTPData) {
         this.totpEnabled = d.Enabled
-        this.redraw()
     }
 
     renderEnableButton(): JSX.Element {
-        let onClickEnable = (ev: React.FormEvent<HTMLElement>) => {
-            ev.preventDefault()
-            this.core.tracker.goto(state.parse('2fa/enable-totp'))
-        }
-        return <a href="/2fa/enable-totp" onClick={onClickEnable}>
+        let onClick = this.core.onClickGoto('2fa/enable-totp')
+        return <a href="/2fa/enable-totp" onClick={onClick}>
             <span className="button-green">Enable TOTP</span>
         </a>
     }
 
     renderDisableButton(): JSX.Element {
-        let onDisable = (ev: React.FormEvent<HTMLElement>) => {
-            ev.preventDefault()
-            this.core.tracker.goto(state.parse('2fa/disable-totp'))
-        }
-        return <a href="/2fa/disable-totp" onClick={onDisable}>
+        let onClick = this.core.onClickGoto('2fa/disable-totp')
+        return <a href="/2fa/disable-totp" onClick={onClick}>
             <span className="button-danger">Disable TOTP</span>
         </a>
     }
@@ -284,6 +301,7 @@ export class View {
     }
 
     render(): JSX.Element {
+        if (!this.data) return null
         return <div className="two-factor">
             <h2>Two-Factor Authentication</h2>
             {this.renderState()}
