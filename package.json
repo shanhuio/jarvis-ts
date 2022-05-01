@@ -1,7 +1,7 @@
 {
-    "name": "@shanhuio/jarvis",
+    "name": "@shanhuio/homedrv-drv",
     "version": "0.0.0",
-    "description": "Jarvis Web UI",
+    "description": "HomeDrive Web UI",
     "main": "dist/index.js",
     "scripts": {
         "test": "echo 'no test' && exit 1"
@@ -10,9 +10,9 @@
     "license": "AGPL3",
     "private": false,
     "dependencies": {
-        "@shanhuio/htmlgen": "github:shanhuio/htmlgen-ts",
-        "@shanhuio/lessbase": "github:shanhuio/lessbase",
-        "@shanhuio/misc": "github:shanhuio/misc-ts",
+        "@shanhuio/htmlgen": "github:shanhuio/lib-htmlgen-ts",
+        "@shanhuio/style": "github:shanhuio/lib-style-ts",
+        "@shanhuio/misc": "github:shanhuio/lib-misc-ts",
         "@types/jquery": "^3.5.5",
         "@types/react": "^17.0.11",
         "@types/react-dom": "^17.0.7",
