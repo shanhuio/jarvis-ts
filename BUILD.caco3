@@ -1,10 +1,10 @@
 docker_run {
     Name: "build_zip",
     Image: "/shanhu.io/lib/dockers/nodejs",
-    Command: ["/bin/bash", "build.sh"],
+    Command: ["/bin/bash", "caco3-build.sh"],
     MountWorkspace: "/work",
     Input: {
-        "build.sh": "/opt/node/build.sh",
+        "caco3-build.sh": "/opt/node/caco3-build.sh",
     },
     Output: {
         "jarvis.zip": "/opt/node/drv-ts/jarvis.zip",
