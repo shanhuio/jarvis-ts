@@ -16,7 +16,6 @@ file_set {
     Name: "src",
     Select: ["**"],
     Ignore: [
-        "_/",
         "node_modules/",
         "dist/",
         "tmpl/",
