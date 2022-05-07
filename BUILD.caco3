@@ -20,9 +20,9 @@ file_set {
         "dist/",
         "tmpl/",
         "css/",
-
-        // TODO(h8liu): _ should be included, but file_set does not handle
-        // symlinks very well now.
-        "_/",
+        "_/dist",
+        "_/jarvis.zip",
+        "_/var/objs",
+        "*.zip",
     ],
 }
