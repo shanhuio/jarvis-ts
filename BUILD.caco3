@@ -23,6 +23,6 @@ file_set {
         "_/dist",
         "_/jarvis.zip",
         "_/var/objs",
-        "*.zip",
+        "jarvis.zip",
     ],
 }
